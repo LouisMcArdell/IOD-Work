@@ -31,9 +31,15 @@ def quick_eda(dataframe):
     print(dataframe.isnull().sum())
     print('\n')
 
+    missing_values = dataframe.isnull().sum()
+    percentage_missing = (missing_values / len(dataframe.index) * 100).round(2)
+    sorted_percentage_missing = percentage_missing.sort_values(ascending=False).head(18)
+    print(sorted_percentage_missing)
+
     print('--- Summary Statistics ---')
     display(dataframe.describe())
     print('\n')
 
     print('--- Correlations ---')
     display(dataframe.corr(numeric_only=True))
+
