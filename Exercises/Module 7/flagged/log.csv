@@ -1,0 +1,3 @@
+Model,age,avg_glucose_level,bmi,output,flag,username,timestamp
+Logistic Regression,47.67617409255118,106.40563874075349,30.054684328229825,"{""label"":null,""confidences"":null}",,,2023-11-18 09:46:12.614816
+Logistic Regression,47.67617409255118,106.40563874075349,30.054684328229825,"{""label"":null,""confidences"":null}",,,2023-11-18 10:09:58.305746
