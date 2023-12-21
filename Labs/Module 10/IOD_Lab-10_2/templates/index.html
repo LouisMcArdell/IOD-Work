@@ -16,7 +16,7 @@
  <div class="login">
   <h1>Basic Model to Predict Sentiment</h1>
 
-    <form action="{{ url_for('predict')}}"method="???">
+    <form action="{{ url_for('predict')}}"method="post">
       <input type="text" name="text" placeholder="Enter text" required="required" />
 
         <button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
@@ -24,7 +24,7 @@
 
    <br>
    <br>
-   {{ ??? }}
+   {{ sentiment }}
 
 </div>
 </body>

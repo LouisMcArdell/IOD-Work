@@ -14,7 +14,7 @@ classifier = LinearSVC()
 
 if __name__ == "__main__":
    #may need to change the following to your location of sentiments.csv
-   df = pd.read_csv('../../data/sentiments.csv')  
+   df = pd.read_csv('../../../data/sentiments.csv')  
    pipe = make_pipeline(preprocessor(), tfidf, classifier)
    pipe.fit(df['text'],df['sentiment'])
    joblib.dump(pipe, open('model.joblib','wb'))

@@ -5,7 +5,7 @@ import joblib
 from utils import preprocessor
 
 app = Flask(__name__)
-model = joblib.load(???)
+model = joblib.load(open('model.joblib','rb'))
 
 @app.route('/')
 def home():
@@ -15,13 +15,13 @@ def home():
 def predict():
 
     input = request.form['text']
-    predicted_sentiment = ???
+    predicted_sentiment = model.predict(pd.Series(input))[0]
     if predicted_sentiment == 1:
         output = 'positive'
     else:
         output = 'negative'
 
-    return render_template(???, sentiment=f'Predicted sentiment of "{input}" is {output}.')
+    return render_template('index.html', sentiment=f'Predicted sentiment of "{input}" is {output}.')
 
 
 if __name__ == "__main__":
