@@ -5,6 +5,15 @@ from sklearn.cluster import DBSCAN
 import folium
 from streamlit_folium import st_folium
 
+# Custom CSS to enable scrolling in the sidebar (or any container)
+st.markdown("""
+<style>
+.scrollable-container {
+    height: 300px;
+    overflow-y: auto;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # Define a key for the map interaction to prevent reruns
 MAP_KEY = 'map_interaction'
@@ -50,10 +59,7 @@ def plot_on_map(clustered_df):
         'Fatal Crash': '#4d4d4d'
     }
     map_center = [clustered_df['latitude'].mean(), clustered_df['longitude'].mean()]
-    map = folium.Map(location=map_center, zoom_start=6)
-    
-    # Create a FeatureGroup for the crashes
-    crash_feature_group = folium.FeatureGroup(name='Crash Locations')
+    map = folium.Map(location=map_center, zoom_start=14)  # Adjust zoom_start for closer view
     
     for idx, row in clustered_df.iterrows():
         folium.CircleMarker(
@@ -63,75 +69,71 @@ def plot_on_map(clustered_df):
             fill=True,
             fill_color=severity_colors[row['crashSeverity']],
             popup=f"Cluster: {row['cluster']}"
-        ).add_to(crash_feature_group)
+        ).add_to(map)
     
-    # Optionally, if you want to add a LayerControl to toggle this group
-    folium.LayerControl().add_to(map)
-    
-    return map, crash_feature_group
+    return map
 
+def display_map(map_object):
+    """
+    Displays a Folium map in Streamlit using st_folium.
+
+    Parameters:
+    - map_object: A Folium map object to display.
+    """
+    # Display the Folium map in Streamlit
+    st_folium(map_object, width=725, height=500)
 
 # Streamlit app interface
 st.title('Crash Data Clustering')
 
-# Checkboxes for crash severity selection
-severities = ['Non-Injury Crash', 'Minor Crash', 'Serious Crash', 'Fatal Crash']
-selected_severities = [severity for severity in severities if st.checkbox(severity, key=severity)]
+# Move these elements to the sidebar
+with st.sidebar:
+    # Checkboxes for crash severity selection
+    severities = ['Non-Injury Crash', 'Minor Crash', 'Serious Crash', 'Fatal Crash']
+    selected_severities = [severity for severity in severities if st.checkbox(severity, key=severity)]
 
-# Inputs for epsilon and min_samples
-epsilon_km = st.number_input('Epsilon distance in km (e.g., 0.03 for 30m)', value=0.03, step=0.01)
-min_samples = st.number_input('Min samples', value=150, step=1)
+    # Inputs for epsilon and min_samples
+    epsilon_km = st.number_input('Epsilon distance in km (e.g., 0.03 for 30m)', value=0.03, step=0.01)
+    min_samples = st.number_input('Min samples', value=150, step=1)
 
-# Initialize a flag in the session state if it's not already set
-if 'button_pressed' not in st.session_state:
-    st.session_state['button_pressed'] = False
-
-# Run button
-if st.button('Run Clustering'):
-    # Filter the DataFrame based on selected severities
-    filtered_df = df[df['crashSeverity'].isin(selected_severities)]
+    # Run button
+    if st.button('Run Clustering'):
+        filtered_df = df[df['crashSeverity'].isin(selected_severities)]
     
-    if not filtered_df.empty:
-        # Perform clustering and store the labels
-        cluster_labels = perform_clustering(filtered_df, epsilon_km, min_samples)
-        # Create a new DataFrame excluding noise (-1 label)
-        clustered_df = filtered_df[cluster_labels != -1].copy()
-        clustered_df['cluster'] = cluster_labels[cluster_labels != -1]
-        # Update session state
-        st.session_state['clustered_df'] = clustered_df
+        if not filtered_df.empty:
+            cluster_labels = perform_clustering(filtered_df, epsilon_km, min_samples)
+        
+            # Instead of filtering out noise directly, assign the cluster labels as is
+            filtered_df['cluster'] = cluster_labels
+        
+            # Now, filter the DataFrame to exclude noise if necessary
+            # This step is optional and depends on whether you want to keep noise points for some reason
+            clustered_df = filtered_df[filtered_df['cluster'] != -1].copy()
 
-# Display the results if available in session state
-if st.session_state['clustered_df'] is not None:
-    clustered_df = st.session_state['clustered_df']
-    
-    # Display a summary of clusters
-    cluster_summary = clustered_df['cluster'].value_counts().sort_index()
-    st.write("Cluster summary (Cluster Label: Count):")
-    st.write(cluster_summary)
-    
-    # Check if clustering was successful (i.e., more than one cluster)
-    if len(cluster_summary) > 0:
-        # Set the map interaction flag to True right before displaying the map
-        st.session_state[MAP_KEY] = True
+            st.session_state['clustered_df'] = clustered_df
 
-        # Display results on a folium map
-        result_map, fg = plot_on_map(clustered_df)
-        st_folium(
-            result_map,
-            center=st.session_state["center"],
-            zoom=st.session_state["zoom"], 
-            key="new",
-            feature_group_to_add=fg, 
-            width=725, 
-            height=500
-            )
+    # Display the results if available in session state
+    if st.session_state['clustered_df'] is not None:
+        clustered_df = st.session_state['clustered_df']
 
-        # Reset the map interaction flag to False right after displaying the map
-        st.session_state[MAP_KEY] = False
+        # Display the cluster summary as a table
+        st.table(clustered_df['cluster'].value_counts().sort_index().rename_axis('Cluster').reset_index(name='Count'))
 
-        # If any interaction is detected, stop further execution of the app
-        st.stop()
-    else:
-        st.warning("No clusters found. Adjust parameters and try again.")
-else:
-    st.write("Select severities and parameters, then click 'Run Clustering' to display results.")
+        # Dropdown for selecting a cluster
+        selected_cluster = st.selectbox("Select a cluster to view on map:", clustered_df['cluster'].unique())
+
+# Check if clustering was successful (i.e., more than one cluster)
+if 'selected_cluster' in locals() and selected_cluster is not None:
+    selected_cluster_df = clustered_df[clustered_df['cluster'] == selected_cluster]
+    result_map = plot_on_map(selected_cluster_df)
+    display_map(result_map)
+
+    # Reset the map interaction flag to False right after displaying the map
+    # st.session_state[MAP_KEY] = False
+
+    # If any interaction is detected, stop further execution of the app
+    # st.stop()
+
+
+elif 'clustered_df' in st.session_state and st.session_state['clustered_df'] is not None and len(st.session_state['clustered_df']['cluster'].unique()) == 0:
+    st.warning("No clusters found. Adjust parameters and try again.")

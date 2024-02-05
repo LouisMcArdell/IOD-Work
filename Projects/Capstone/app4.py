@@ -5,6 +5,10 @@ import folium
 from streamlit_folium import st_folium
 import numpy as np
 
+APP_TITLE = 'Fraud and Identity Theft Report'
+APP_SUB_TITLE = 'Source: Federal Trade Commission'
+
+
 # Define a function to load data
 @st.cache_resource  # Adjusted cache decorator
 def load_data(url):
