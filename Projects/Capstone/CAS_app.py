@@ -70,7 +70,7 @@ def plot_on_map(clustered_df):
     map_center = [clustered_df['latitude'].mean(), clustered_df['longitude'].mean()]
     
     # Create the map with an initial tile layer
-    map = folium.Map(location=map_center, zoom_start=18, tiles='CartoDB Positron', attr='CartoDB')
+    map = folium.Map(location=map_center, zoom_start=16, tiles='CartoDB Positron', attr='CartoDB')
     
     # Define the Esri Satellite tile layer as an additional layer (not the default)
     folium.TileLayer(
@@ -248,7 +248,7 @@ if run_clustering:
         st.warning("No data matches the selected filters. Please adjust your selections.")
 
 
-main_col, right_sidebar = st.columns([8, 4])
+main_col, right_sidebar = st.columns([9, 4])
 
 with main_col:
     if st.session_state.get('run_clustering', False) and 'clustered_df' in st.session_state and st.session_state['clustered_df'] is not None and not st.session_state['clustered_df'].empty:
@@ -262,7 +262,7 @@ with main_col:
         if selected_cluster is not None:
             selected_cluster_df = st.session_state['clustered_df'][st.session_state['clustered_df']['cluster'] == selected_cluster]
             result_map = plot_on_map(selected_cluster_df)
-            map_response = st_folium(result_map, width=725, height=500)
+            map_response = st_folium(result_map, width=650, height=500)
 
             if map_response:
                 # Explicitly handle None values for last_clicked and last_object_clicked
