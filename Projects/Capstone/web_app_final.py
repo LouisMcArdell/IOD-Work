@@ -239,7 +239,7 @@ if run_clustering:
         st.warning("No data matches the selected filters. Please adjust your selections.")
 
 
-main_col, right_sidebar = st.columns([8, 7])
+main_col, right_sidebar = st.columns([8, 4])
 
 with main_col:
     if st.session_state.get('run_clustering', False) and 'clustered_df' in st.session_state and st.session_state['clustered_df'] is not None and not st.session_state['clustered_df'].empty:
@@ -275,7 +275,7 @@ with main_col:
                     st.session_state['selected_crash_id'] = last_clicked_tooltip if last_clicked_tooltip else st.session_state.get('selected_crash_id', None)
             
             # Prepare and display the summary for all clusters below the map
-            st.write("Overall Cluster Summary")
+            st.markdown("**Summary of clusters:**")
             cluster_summary_df = prepare_cluster_summary(st.session_state['clustered_df'])
             st.dataframe(cluster_summary_df)  # Displaying the DataFrame for all clusters
 
@@ -283,7 +283,7 @@ with right_sidebar:
 
     # Display Cluster Summary
     if 'selected_cluster' in st.session_state and st.session_state['selected_cluster'] is not None:
-        st.write(f"Details for Cluster {st.session_state['selected_cluster']}:")
+        st.markdown("**Details for selected cluster:**")
 
         # Filter the DataFrame for the selected cluster
         selected_cluster_df = st.session_state['clustered_df'][st.session_state['clustered_df']['cluster'] == st.session_state['selected_cluster']]
@@ -329,8 +329,12 @@ with right_sidebar:
                 st.markdown("**Details for the selected crash:**")
 
                 # Display the URL as a clickable hyperlink
-                st.markdown(f"[View Street View]({street_view_url})", unsafe_allow_html=True)
-                st.dataframe(filtered_crash_df.T)
+                st.markdown(f"[View Crash Location]({street_view_url})", unsafe_allow_html=True)
+
+                # Transpose the DataFrame, reset the index, and rename the columns to 'Field' and 'Value'
+                transposed_df = filtered_crash_df.T.reset_index()
+                transposed_df.columns = ['Field', 'Value']
+                st.dataframe(transposed_df, hide_index=True)
             else:
                 # Display a message when details for the selected crash are not found
                 st.write("No details found for the selected crash.")
