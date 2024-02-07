@@ -69,7 +69,7 @@ def plot_on_map(clustered_df):
     map_center = [clustered_df['latitude'].mean(), clustered_df['longitude'].mean()]
     
     # Create the map with an initial tile layer
-    map = folium.Map(location=map_center, zoom_start=16, tiles='CartoDB Positron', attr='CartoDB')  # Setting tiles=None to start with no tiles
+    map = folium.Map(location=map_center, zoom_start=18, tiles='CartoDB Positron', attr='CartoDB')
     
     # Define the Esri Satellite tile layer as an additional layer (not the default)
     folium.TileLayer(
@@ -79,8 +79,15 @@ def plot_on_map(clustered_df):
         overlay=False
     ).add_to(map)
 
-  
+    # Define the CartoDB Positron tile layer
+    folium.TileLayer(
+        'CartoDB Positron',
+        attr='CartoDB',
+        name='CartoDB Positron',
+        overlay=False
+    ).add_to(map)    
 
+  
     # Add markers with tooltips as unique identifiers
     for idx, row in clustered_df.iterrows():
         folium.CircleMarker(
@@ -89,6 +96,7 @@ def plot_on_map(clustered_df):
             color=severity_colors[row['crashSeverity']],
             fill=True,
             fill_color=severity_colors[row['crashSeverity']],
+            fill_opacity=0.7,
             tooltip=str(idx),  # Use the DataFrame index or a unique identifier column as tooltip
         ).add_to(map)
     
