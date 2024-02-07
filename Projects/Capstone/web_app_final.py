@@ -69,21 +69,17 @@ def plot_on_map(clustered_df):
     map_center = [clustered_df['latitude'].mean(), clustered_df['longitude'].mean()]
     
     # Create the map with an initial tile layer
-    map = folium.Map(location=map_center, zoom_start=16, tiles=None)  # Setting tiles=None to start with no tiles
+    map = folium.Map(location=map_center, zoom_start=16, tiles='CartoDB Positron', attr='CartoDB')  # Setting tiles=None to start with no tiles
     
-    # Define different tile layers including CartoDB Positron and Esri Satellite
-    tiles = [
-        ('Esri Satellite', 
-         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 
-         {'attr': 'Esri', 'overlay': False, 'name': 'Esri Satellite'}),
-        ('CartoDB Positron', 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', 
-         {'attr': 'CartoDB', 'overlay': False, 'name': 'CartoDB Positron'}),
-    ]
+    # Define the Esri Satellite tile layer as an additional layer (not the default)
+    folium.TileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr='Esri',
+        name='Esri Satellite',
+        overlay=False
+    ).add_to(map)
 
-    # Add tile layers to the map
-    for name, tile_url, options in tiles:
-        folium.TileLayer(tile_url, attr=options['attr'], name=options['name'], overlay=options['overlay']).add_to(map)
-
+  
 
     # Add markers with tooltips as unique identifiers
     for idx, row in clustered_df.iterrows():
@@ -108,10 +104,11 @@ def prepare_cluster_summary(df):
     # Find the most common 'region' and 'urban' value for each cluster
     most_common_region = df.groupby('cluster')['region'].agg(lambda x: x.mode()[0] if not x.mode().empty else np.nan).rename_axis('Cluster').reset_index(name='Region')
     most_common_urban = df.groupby('cluster')['urban'].agg(lambda x: x.mode()[0] if not x.mode().empty else np.nan).rename_axis('Cluster').reset_index(name='Urban/Open Road')
-    
+    most_speed_limit = df.groupby('cluster')['speedLimit'].agg(lambda x: x.mode()[0] if not x.mode().empty else np.nan).rename_axis('Cluster').reset_index(name='Speed Limit')
     # Merge the aggregated dataframes
     summary_df = pd.merge(cluster_counts, most_common_region, on='Cluster')
     summary_df = pd.merge(summary_df, most_common_urban, on='Cluster')
+    summary_df = pd.merge(summary_df, most_speed_limit, on='Cluster')
 
     # Sort the summary DataFrame by 'Cluster' to ensure it is ordered by cluster number
     summary_df.sort_values(by='Cluster', inplace=True)
@@ -123,51 +120,90 @@ def prepare_cluster_summary(df):
 
 
 def display_transposed_summary(cluster_df, cluster_number):
-    """
-    Displays a transposed summary for the selected cluster.
-
-    Parameters:
-    - cluster_df: DataFrame containing data for the selected cluster.
-    - cluster_number: The number of the selected cluster.
-    """
-    # Aggregate data for the selected cluster
+    # Basic cluster information
     most_common_region = cluster_df['region'].mode()[0] if not cluster_df['region'].mode().empty else 'N/A'
     most_common_urban = cluster_df['urban'].mode()[0] if not cluster_df['urban'].mode().empty else 'N/A'
     most_common_speed_limit = cluster_df['speedLimit'].mode()[0] if not cluster_df['speedLimit'].mode().empty else 'N/A'
+    most_common_traffic_control = cluster_df['trafficControl'].mode()[0] if not cluster_df['trafficControl'].mode().empty else 'N/A'
+    most_common_road_character = cluster_df['roadCharacter'].mode()[0] if not cluster_df['roadCharacter'].mode().empty else 'N/A'    
     crash_count = len(cluster_df)
     center_latitude = cluster_df['latitude'].mean()
     center_longitude = cluster_df['longitude'].mean()
-
-    # Generate Google Maps URL with a marker at the center point
     maps_url = f"https://www.google.com/maps?q={center_latitude},{center_longitude}&hl=en&z=17"
-
-    # Generate a direct Google Street View URL
     street_view_url = f"http://maps.google.com/maps?q=&layer=c&cbll={center_latitude},{center_longitude}"
 
-    # Create a Markdown string for the transposed table
+    # Weather conditions and percentages
+    weather_counts = cluster_df['weatherA'].value_counts(normalize=True) * 100
+    weather_summary = '\n'.join([f"| {condition} | {percentage:.2f}% |" for condition, percentage in weather_counts.iteritems()])
+
+    # Light conditions and percentages
+    light_counts = cluster_df['light'].value_counts(normalize=True) * 100
+    light_summary = '\n'.join([f"| {condition} | {percentage:.2f}% |" for condition, percentage in light_counts.iteritems()])
+
+    # Markdown table
     summary_md = f"""
-    | Field               | Value     |
-    |---------------------|-----------|
-    | Cluster Number      | {cluster_number} |
-    | Crash Count         | {crash_count} |
-    | Region  | {most_common_region} |
-    | Urban/Open Road     | {most_common_urban} |
-    | Speed Limit | {most_common_speed_limit} |
-    | View on Google Maps       | [Google Maps]({maps_url}) |
-    | View on Google Street View| [Street View]({street_view_url}) |   
+| Field               | Value     |
+|---------------------|-----------|
+| Crash Count         | {crash_count} |
+| Region              | {most_common_region} |
+| Urban/Open Road     | {most_common_urban} |
+| Speed Limit         | {most_common_speed_limit} |
+| Traffic Control         | {most_common_traffic_control} |
+| Road Character         | {most_common_road_character} |
+**Weather Conditions** | **Percentages** |
+{weather_summary}
+**Light Conditions**   | **Percentages** |
+{light_summary}
+**Google Links**   |  |
+| View on Google Maps | [Google Maps]({maps_url}) |
+| View on Google Street View | [Street View]({street_view_url}) |
     """
     
-    # Display the Markdown table in Streamlit
-    st.markdown(summary_md)
+    st.markdown(summary_md, unsafe_allow_html=True)
+
+
+
+
 
 # Streamlit app interface
 st.title('NZ Crash Data Clustering')
-st.subheader('Source: NZTA Crash Analysis System (CAS)')
+st.markdown('Source: [NZTA Crash Analysis System (CAS)](https://opendata-nzta.opendata.arcgis.com/documents/ae974fef37154108b9b1048471335e67/about)', unsafe_allow_html=True)
+
 
 with st.sidebar:
+    # Message for crash severity selection
+    st.markdown("## Controls")
+    st.markdown('<span style="font-size: 14px;">Select crash severities:</span>', unsafe_allow_html=True)
     # Checkboxes for crash severity selection
     severities = ['Non-Injury Crash', 'Minor Crash', 'Serious Crash', 'Fatal Crash']
     selected_severities = [severity for severity in severities if st.checkbox(severity, key=severity)]
+
+    # Define regions based on value counts provided
+    regions = [
+        "Auckland Region",
+        "Waikato Region",
+        "Canterbury Region",
+        "Wellington Region",
+        "Bay of Plenty Region",
+        "Manawatū-Whanganui Region",
+        "Otago Region",
+        "Northland Region",
+        "Hawke's Bay Region",
+        "Southland Region",
+        "Taranaki Region",
+        "Gisborne Region",
+        "Marlborough Region",
+        "Nelson Region",
+        "Tasman Region",
+        "West Coast Region",
+        "Unknown"
+    ]
+    
+    # Add option for selecting all regions
+    regions_with_all_option = ["All"] + regions
+
+    # Radio buttons for selecting a region
+    selected_region = st.radio("Select a region:", options=regions_with_all_option, key='region')
 
     # Inputs for epsilon and min_samples
     epsilon_km = st.number_input('Epsilon distance in km (e.g., 0.03 for 30m)', value=0.03, step=0.01)
@@ -178,13 +214,32 @@ with st.sidebar:
 
 if run_clustering:
     st.session_state['run_clustering'] = True
-    filtered_df = df[df['crashSeverity'].isin(selected_severities)]
+    
+    # Apply region filter if a specific region is selected; otherwise, use all data
+    if selected_region != "All":
+        filtered_df = df[(df['crashSeverity'].isin(selected_severities)) & (df['region'] == selected_region)]
+    else:
+        filtered_df = df[df['crashSeverity'].isin(selected_severities)]
+    
     if not filtered_df.empty:
+        # Perform clustering
         cluster_labels = perform_clustering(filtered_df, epsilon_km, min_samples)
+        
+        # Assign cluster labels directly to the DataFrame
         filtered_df['cluster'] = cluster_labels
-        st.session_state['clustered_df'] = filtered_df[filtered_df['cluster'] != -1]
+        
+        # Filter out noise (-1 labels) AFTER assigning cluster labels
+        clustered_df = filtered_df[filtered_df['cluster'] != -1]
+        
+        # Update session state with the newly filtered and clustered DataFrame
+        st.session_state['clustered_df'] = clustered_df
+    else:
+        # Handle case where filtering results in an empty DataFrame
+        st.session_state['clustered_df'] = pd.DataFrame()
+        st.warning("No data matches the selected filters. Please adjust your selections.")
 
-main_col, right_sidebar = st.columns([3, 3])
+
+main_col, right_sidebar = st.columns([8, 7])
 
 with main_col:
     if st.session_state.get('run_clustering', False) and 'clustered_df' in st.session_state and st.session_state['clustered_df'] is not None and not st.session_state['clustered_df'].empty:
@@ -256,8 +311,26 @@ with right_sidebar:
             selected_crash_detail_df = selected_cluster_df[selected_cluster_df.index.astype(str) == selected_crash_id]
 
             if not selected_crash_detail_df.empty:
-                st.write("Details for the selected crash:")
-                st.dataframe(selected_crash_detail_df)
+                # Filter out columns where all values are either NULL or zero
+                filtered_crash_df = selected_crash_detail_df.dropna(axis=1, how='all')  # Drop columns where all values are NaN
+                filtered_crash_df = filtered_crash_df.loc[:, (filtered_crash_df != 0).any(axis=0)]  # Further drop columns where all values are 0
+                filtered_crash_df = filtered_crash_df.drop(['X'], axis=1)
+                filtered_crash_df = filtered_crash_df.drop(['Y'], axis=1)
+
+                # Assuming latitude and longitude are available for the selected crash
+                crash_latitude = selected_crash_detail_df['latitude'].values[0]
+                crash_longitude = selected_crash_detail_df['longitude'].values[0]
+
+
+                # Generate the street view URL
+                street_view_url = f"http://maps.google.com/maps?q=&layer=c&cbll={crash_latitude},{crash_longitude}"
+
+                # Display the transposed DataFrame for better readability, showing only non-zero, non-NULL columns
+                st.markdown("**Details for the selected crash:**")
+
+                # Display the URL as a clickable hyperlink
+                st.markdown(f"[View Street View]({street_view_url})", unsafe_allow_html=True)
+                st.dataframe(filtered_crash_df.T)
             else:
                 # Display a message when details for the selected crash are not found
                 st.write("No details found for the selected crash.")
