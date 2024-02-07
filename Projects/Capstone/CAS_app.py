@@ -9,6 +9,7 @@ from streamlit_folium import st_folium
 # Set Streamlit page configuration to use wide mode
 st.set_page_config(layout='wide', page_title='NZ Crash Data Clustering')
 
+
 # Custom CSS to enable scrolling in the sidebar (or any container)
 st.markdown("""
 <style>
