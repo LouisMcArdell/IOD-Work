@@ -251,8 +251,12 @@ main_col, right_sidebar = st.columns([8, 4])
 
 with main_col:
     if st.session_state.get('run_clustering', False) and 'clustered_df' in st.session_state and st.session_state['clustered_df'] is not None and not st.session_state['clustered_df'].empty:
-        unique_clusters = np.sort(st.session_state['clustered_df']['cluster'].unique())
-        selected_cluster = st.sidebar.selectbox("Select a cluster to view on map:", unique_clusters, key='selected_cluster')
+        
+        col1, col2 = st.columns([1, 5])  # Adjust the ratio as needed to fit the select box nicely
+        
+        with col1:
+            unique_clusters = np.sort(st.session_state['clustered_df']['cluster'].unique())
+            selected_cluster = st.selectbox("Select a cluster to view on map:", unique_clusters, key='selected_cluster')
         
         if selected_cluster is not None:
             selected_cluster_df = st.session_state['clustered_df'][st.session_state['clustered_df']['cluster'] == selected_cluster]
