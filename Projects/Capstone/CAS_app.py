@@ -143,11 +143,11 @@ def display_transposed_summary(cluster_df, cluster_number):
 
     # Weather conditions and percentages
     weather_counts = cluster_df['weatherA'].value_counts(normalize=True) * 100
-    weather_summary = '\n'.join([f"| {condition} | {percentage:.2f}% |" for condition, percentage in weather_counts.iteritems()])
+    weather_summary = '\n'.join([f"| {condition} | {percentage:.2f}% |" for condition, percentage in weather_counts.items()])
 
     # Light conditions and percentages
     light_counts = cluster_df['light'].value_counts(normalize=True) * 100
-    light_summary = '\n'.join([f"| {condition} | {percentage:.2f}% |" for condition, percentage in light_counts.iteritems()])
+    light_summary = '\n'.join([f"| {condition} | {percentage:.2f}% |" for condition, percentage in light_counts.items()])
 
     # Markdown table
     summary_md = f"""
