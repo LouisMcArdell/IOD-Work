@@ -70,7 +70,7 @@ def plot_on_map(clustered_df):
     map_center = [clustered_df['latitude'].mean(), clustered_df['longitude'].mean()]
     
     # Create the map with an initial tile layer
-    map = folium.Map(location=map_center, zoom_start=16, tiles='CartoDB Positron', attr='CartoDB')
+    map = folium.Map(location=map_center, zoom_start=17, tiles='CartoDB Positron', attr='CartoDB', dragging=False, scrollWheelZoom=False)
     
     # Define the Esri Satellite tile layer as an additional layer (not the default)
     folium.TileLayer(
