@@ -70,7 +70,7 @@ def plot_on_map(clustered_df):
     map_center = [clustered_df['latitude'].mean(), clustered_df['longitude'].mean()]
     
     # Create the map with an initial tile layer
-    map = folium.Map(location=map_center, zoom_start=17, tiles='CartoDB Positron', attr='CartoDB', dragging=False, scrollWheelZoom=False)
+    map = folium.Map(location=map_center, zoom_start=17, tiles='CartoDB Positron', attr='CartoDB')
     
     # Define the Esri Satellite tile layer as an additional layer (not the default)
     folium.TileLayer(
@@ -253,7 +253,7 @@ main_col, right_sidebar = st.columns([9, 4])
 with main_col:
     if st.session_state.get('run_clustering', False) and 'clustered_df' in st.session_state and st.session_state['clustered_df'] is not None and not st.session_state['clustered_df'].empty:
         
-        col1, col2 = st.columns([1, 5])  # Adjust the ratio as needed to fit the select box nicely
+        col1, col2 = st.columns([1, 4])  # Adjust the ratio as needed to fit the select box nicely
         
         with col1:
             unique_clusters = np.sort(st.session_state['clustered_df']['cluster'].unique())
